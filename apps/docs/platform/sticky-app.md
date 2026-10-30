@@ -6,7 +6,7 @@ Starting from the Mini Apps version **7.7**, you are able to prevent the applica
 closing due to swipe down by using a special method. 
 
 - [Mini Apps method](methods.md#web-app-setup-swipe-behavior)
-- [@telegram-apps/sdk component](../packages/telegram-apps-sdk/2-x/components/swipe-behavior.md)
+- [@tma.js/sdk component](../packages/tma-js-sdk/features/swipe-behavior)
 
 :::
 
@@ -74,24 +74,20 @@ Here is the HTML and CSS you can use:
       My application goes here.
     </div>
   </div>
-  <script src="https://unpkg.com/@telegram-apps/sdk@1.0.0/dist/index.iife.js"></script>
-  <script>
-    (function() {
-      var { retrieveLaunchParams, postEvent } = window.telegramApps.sdk;
-      var lp = retrieveLaunchParams();
+  <script type="module">
+    import { retrieveLaunchParams, postEvent } from 'https://esm.sh/@tma.js/bridge';
 
-      // Some versions of Telegram don't need the classes above.
-      if (['macos', 'tdesktop', 'weba', 'web', 'webk'].includes(lp.platform)) {
-        return;
-      }
+    const { tgWebAppPlatform } = retrieveLaunchParams();
 
+    // Some versions of Telegram don't need the classes above.
+    if (!['macos', 'tdesktop', 'weba', 'web', 'webk'].includes(tgWebAppPlatform)) {
       // Expand the application.
       postEvent('web_app_expand');
 
       document.body.classList.add('mobile-body');
       document.getElementById('wrap').classList.add('mobile-wrap');
       document.getElementById('content').classList.add('mobile-content');
-    })();
+    }
   </script>
 </body>
 </html>

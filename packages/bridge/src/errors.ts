@@ -1,54 +1,97 @@
-import type { Version } from '@tma.js/types';
 import { errorClass, errorClassWithData } from 'error-kid';
 
-export class MethodUnsupportedError extends errorClass<
-  [method: string, version: Version]
->('MethodUnsupportedError', (method, version) => [
-  `Method "${method}" is unsupported in Mini Apps version ${version}`,
-]) {
+import type { Version } from './types/index.js';
+
+/**
+ * Thrown when the current environment provides no known way to communicate with the Telegram
+ * client. Usually, it means the app was opened outside Telegram.
+ */
+export class UnknownEnvError extends /* @__PURE__ */ errorClass({
+  message: 'Unable to determine the way to communicate with the Telegram client',
+  name: 'UnknownEnvError',
+}) {
 }
 
-export class MethodParameterUnsupportedError extends errorClass<
-  [method: string, param: string, version: Version]
->('MethodParameterUnsupportedError', (method, param, version) => [
-  `Parameter "${param}" of "${method}" method is unsupported in Mini Apps version ${version}`,
-]) {
+/**
+ * Thrown when a method is not supported in the current Mini Apps version.
+ */
+export class MethodUnsupportedError extends /* @__PURE__ */ errorClassWithData({
+  data: (method: string, version: Version) => ({ method, version }),
+  message: (method: string, version: Version) => {
+    return `Method "${method}" is unsupported in Mini Apps version ${version}`;
+  },
+  name: 'MethodUnsupportedError',
+}) {
 }
 
-export class LaunchParamsRetrieveError extends errorClassWithData<
-  { errors: { source: string; error: unknown }[] },
-  [{ source: string; error: unknown }[]]
->(
-  'LaunchParamsRetrieveError',
-  errors => ({ errors }),
-  errors => [
-    [
-      'Unable to retrieve launch parameters from any known source. Perhaps, you have opened your app outside Telegram?',
-      '📖 Refer to docs for more information:',
-      'https://docs.telegram-mini-apps.com/packages/tma-js-bridge/environment',
-      '',
-      'Collected errors:',
-      ...errors.map(({ source, error }) => {
-        return `Source: ${source} / ${error instanceof Error ? error.message : String(error)}`;
-      }),
-    ].join('\n'),
-  ],
-) {
+/**
+ * Thrown when a method parameter is not supported in the current Mini Apps version.
+ */
+export class MethodParameterUnsupportedError extends /* @__PURE__ */ errorClassWithData({
+  data: (method: string, param: string, version: Version) => ({ method, param, version }),
+  message: (method: string, param: string, version: Version) => {
+    return `Parameter "${param}" of "${method}" method is unsupported in Mini Apps version ${version}`;
+  },
+  name: 'MethodParameterUnsupportedError',
+}) {
 }
 
-export class InvalidLaunchParamsError extends errorClass<
-  [launchParams: string, cause: unknown]
->('InvalidLaunchParamsError', (launchParams, cause) => [
-  `Invalid value for launch params: ${launchParams}`,
-  { cause },
-]) {
+/**
+ * Thrown when launch parameters can't be found in any known source.
+ */
+export class LaunchParamsRetrieveError extends /* @__PURE__ */ errorClassWithData({
+  data: (errors: { error: unknown; source: string }[]) => ({ errors }),
+  message: (errors: { error: unknown; source: string }[]) => [
+    'Unable to retrieve launch parameters from any known source. Perhaps, you have opened your app outside Telegram?',
+    '',
+    'Collected errors:',
+    ...errors.map(({ error, source }) => {
+      return `- ${source}: ${error instanceof Error ? error.message : String(error)}`;
+    }),
+  ].join('\n'),
+  name: 'LaunchParamsRetrieveError',
+}) {
 }
 
-export class UnknownEnvError extends errorClass('UnknownEnvError') {
+/**
+ * Thrown when a value doesn't represent valid launch parameters.
+ */
+export class InvalidLaunchParamsError extends /* @__PURE__ */ errorClassWithData({
+  cause: (_value: string, cause?: unknown) => cause,
+  data: (value: string) => ({ value }),
+  message: (value: string) => `Invalid launch parameters: ${value}`,
+  name: 'InvalidLaunchParamsError',
+}) {
 }
 
-export class InvokeCustomMethodFailedError extends errorClass<[error: string]>(
-  'InvokeCustomMethodError',
-  error => [`Server returned error: ${error}`],
-) {
+/**
+ * Thrown when a custom method invocation completed with an error.
+ */
+export class InvokeCustomMethodFailedError extends /* @__PURE__ */ errorClassWithData({
+  data: (error: string) => ({ error }),
+  message: (error: string) => `Custom method invocation failed: ${error}`,
+  name: 'InvokeCustomMethodFailedError',
+}) {
+}
+
+/**
+ * Thrown when an operation didn't complete in time.
+ */
+export class TimeoutError extends /* @__PURE__ */ errorClassWithData({
+  data: (timeout: number) => ({ timeout }),
+  message: (timeout: number) => `Timeout reached: ${timeout}ms`,
+  name: 'TimeoutError',
+}) {
+}
+
+/**
+ * Thrown when a value is too long to be used as a start parameter.
+ */
+export class StartParamTooLongError extends /* @__PURE__ */ errorClassWithData({
+  data: (length: number) => ({ length }),
+  message: (length: number) => {
+    return `Encoded start parameter length is ${length}, but the maximum allowed is 512`;
+  },
+  name: 'StartParamTooLongError',
+}) {
 }

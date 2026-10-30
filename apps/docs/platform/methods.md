@@ -79,19 +79,19 @@ window.external.notify(data);
 ## Calling Methods
 
 Handling all possible environments for a developer's application can be challenging. To simplify
-this process, the community developed the [@telegram-apps/sdk](../packages/telegram-apps-sdk/2-x)
+this process, the community developed the [@tma.js/sdk](../packages/tma-js-sdk)
 package, which greatly eases integration.
 
 Here's how to use it:
 
 ```ts
-import { postEvent } from '@telegram-apps/sdk';
+import { postEvent } from '@tma.js/sdk';
 
 postEvent('web_app_set_header_color', { color_key: 'bg_color' });
 ```
 
 You can learn more about calling methods in the
-package's [documentation](../packages/telegram-apps-bridge/events.md#calling-methods).
+package's [documentation](../packages/tma-js-bridge/methods.md#calling-methods).
 
 ## Available Methods
 
@@ -205,6 +205,9 @@ class [Message](https://core.telegram.org/bots/api#message).
 | Field | Type     | Description                                                          |
 |-------|----------|----------------------------------------------------------------------|
 | data  | `string` | Data to send to a bot. Should not have size of more than 4096 bytes. |
+
+> [!WARNING]
+> This method only works when the mini app was opened via [KeyboardButton](https://core.telegram.org/bots/webapps#keyboard-button-mini-apps).
 
 ### `web_app_device_storage_clear`
 
@@ -429,9 +432,10 @@ Available since: **v6.1**
 Opens the Telegram link by its pathname and query parameters. The link will be opened in the
 Telegram app, Mini App will be closed.
 
-| Field     | Type     | Description                                                                                                                  |
-|-----------|----------|------------------------------------------------------------------------------------------------------------------------------|
-| path_full | `string` | Should be a value taken from the link of this format: `https://t.me/{path_full}`. Can additionally contain query parameters. |
+| Field         | Type      | Description                                                                                                                  |
+|---------------|-----------|------------------------------------------------------------------------------------------------------------------------------|
+| path_full     | `string`  | Should be a value taken from the link of this format: `https://t.me/{path_full}`. Can additionally contain query parameters. |
+| force_request | `boolean` | _Optional_. Should the client force the link request processing.                                                             |
 
 ### `web_app_read_text_from_clipboard`
 
@@ -449,6 +453,18 @@ the [clipboard_text_received](events.md#clipboard-text-received) event.
 
 Notifies Telegram about current application is ready to be shown. This method will make Telegram to
 remove application loader and display Mini App.
+
+### `web_app_request_chat`
+
+Available since: **v9.6**
+
+Prompts the user to choose a chat to share with the Mini App. As a result, Telegram triggers
+the [requested_chat_sent](events.md#requested-chat-sent) or
+[requested_chat_failed](events.md#requested-chat-failed) event.
+
+| Field  | Type     | Description                |
+|--------|----------|----------------------------|
+| req_id | `string` | Unique request identifier. |
 
 ### `web_app_request_content_safe_area`
 
@@ -471,7 +487,7 @@ Available since: **v8.0**
 
 Displays a native popup prompting the user to download a file.
 
-In turn, the Telegram client emits the [file_download_requested](./events.md#file_download_requested) event.
+In turn, the Telegram client emits the [file_download_requested](./events.md#file-download-requested) event.
 
 | Field     | Type     | Description                                 |
 |-----------|----------|---------------------------------------------|
@@ -650,6 +666,7 @@ Updates the [Main Button](main-button.md) settings.
 | color               | `string`  | _Optional_. The button background color in `#RRGGBB` format.                                                                                                  |
 | text_color          | `string`  | _Optional_. The button text color in `#RRGGBB` format.                                                                                                        |
 | has_shine_effect    | `boolean` | _Optional_. Should the button have a shining effect.                                                                                                          | `v7.8`          |
+| icon_custom_emoji_id    | `string` | _Optional_. The ID of custom emoji icon displayed alongside button text.                                                        | `v9.5`          |
 
 ### `web_app_setup_settings_button`
 
@@ -747,6 +764,7 @@ The method that updates the Secondary Button settings.
     <th>Field</th>
     <th>Type</th>
     <th>Description</th>
+    <th>Available since</th>
   </tr>
 
   </thead>
@@ -758,6 +776,7 @@ The method that updates the Secondary Button settings.
       <code>boolean</code>
     </td>
     <td><i>Optional</i>. Should the button be displayed.</td>
+    <td><code>v7.10</code></td>
   </tr>
 
   <tr>
@@ -766,6 +785,7 @@ The method that updates the Secondary Button settings.
       <code>boolean</code>
     </td>
     <td><i>Optional</i>. Should the button be enabled.</td>
+    <td><code>v7.10</code></td>
   </tr>
 
   <tr>
@@ -777,6 +797,7 @@ The method that updates the Secondary Button settings.
       <i>Optional</i>. Should loader inside the button be displayed. Use this property in case, 
       some operation takes time. This loader will make user notified about it.
     </td>
+    <td><code>v7.10</code></td>
   </tr>
 
   <tr>
@@ -785,6 +806,7 @@ The method that updates the Secondary Button settings.
       <code>string</code>
     </td>
     <td><i>Optional</i>. The button background color in <code>#RRGGBB</code> format.</td>
+    <td><code>v7.10</code></td>
   </tr>
 
   <tr>
@@ -793,6 +815,7 @@ The method that updates the Secondary Button settings.
       <code>string</code>
     </td>
     <td><i>Optional</i>. The button text color in <code>#RRGGBB</code> format.</td>
+    <td><code>v7.10</code></td>
   </tr>
 
   <tr>
@@ -801,6 +824,7 @@ The method that updates the Secondary Button settings.
       <code>boolean</code>
     </td>
     <td><i>Optional</i>. Should the button have a shining effect.</td>
+    <td><code>v7.10</code></td>
   </tr>
 
   <tr>
@@ -826,7 +850,18 @@ The method that updates the Secondary Button settings.
         </li>
       </ul>
     </td>
+    <td><code>v7.10</code></td>
   </tr>
+
+  <tr>
+    <td>icon_custom_emoji_id</td>
+    <td>
+      <code>string</code>
+    </td>
+    <td><i>Optional</i>. The ID of custom emoji icon displayed alongside button text.</td>
+    <td><code>v9.5</code></td>
+  </tr>
+
   </tbody>
 </table>
 

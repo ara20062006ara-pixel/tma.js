@@ -29,49 +29,116 @@ only, as long as the current repository is a pnpm monorepo):
 pnpm i
 ```
 
+## Project Goal
+
+The main goal of `@tma.js` is to be a better alternative to the official Telegram Mini Apps SDK,
+[telegram-web-app.js](https://telegram.org/js/telegram-web-app.js) (see the
+[motivation](./MOTIVATION.md)). When adding or changing platform functionality, check how the
+official SDK implements it to keep feature parity, and aim to do better in typing, ergonomics and
+reliability.
+
+The official platform documentation is published
+at [core.telegram.org/bots/webapps](https://core.telegram.org/bots/webapps). Together with the
+official SDK's source code, treat it as the source of truth for how Mini Apps methods and events
+work and should behave.
+
+## Documentation
+
+The documentation located in the [apps/docs](./apps/docs) directory is published
+at [docs.telegram-mini-apps.com](https://docs.telegram-mini-apps.com/). If your changes affect the
+public API or the platform description, update the related documentation pages as well.
+
 ## Philosophy
 
 Before diving deep into the code, it's important to understand the philosophy behind our repositories' development.
 
 The first thing to know here is we don't really like handling errors using `try-catch` construction.
-This approach often requires you to read the source code of a function to know what specific errors it might throw.
-Instead, we use the `Either` abstraction from [fp-ts](https://www.npmjs.com/package/fp-ts). This provides a clear and
-explicit way to see whether a function executed successfully or failed.
+This approach often requires you to read the source code of a function to know what specific errors it might throw,
+and TypeScript doesn't check thrown errors at all. Instead, functions return their expected errors as a `Result`,
+so the compiler knows exactly how a function can fail:
+
+```typescript
+type Result<E, T> = { ok: false; error: E } | { ok: true; data: T };
+```
 
 However, we recognize that many developers may be more comfortable with a traditional `try-catch` approach. To
-accommodate this, all functions that can fail must return an `Either`. Additionally, you must provide a "throwing"
-alternative that wraps the `Either` and throws the error for those who prefer that style.
+accommodate this, a function failing with expected errors must have two versions:
 
-When writing your code, ensure that if a function can throw an error, it always returns an `Either` and has a throwing
-counterpart.
+- `safeX` returning a `Result`. This is the main implementation;
+- `x` unwrapping the result and throwing its error. It has no logic of its own.
+
+Follow these rules:
+
+- Errors are classes created with [error-kid](https://www.npmjs.com/package/error-kid), so users can handle each
+  of them with `matchError` and get a compilation error when one is left unhandled.
+- Only expected errors go to `Result`: invalid input, a timeout, a failed operation. Environment and usage errors,
+  like calling a method outside Telegram or calling an unsupported method, are thrown.
+- Internal functions return `Result` too, instead of throwing and catching. This way the compiler checks that
+  the error type of the safe version matches its implementation. Never cast the caught error to the expected type.
+- Document errors with `@returns` in the safe version and with `@throws` in the throwing one, and cover the error
+  types with type tests.
 
 Here is an example:
 
 ```typescript
-import * as E from 'fp-ts/Either';
-import { pipe } from 'fp-ts/function';
+import { errorClass } from 'error-kid';
 
-class MyError extends Error {
+import { err, ok, type Result, unwrap } from './result.js';
+
+export class NotFoundError extends errorClass({ name: 'NotFoundError', message: 'Not found' }) {
 }
 
-function nonThrowing(): E.Either<MyError, string> {
-  return Math.random() < 0.5
-    ? E.left(new MyError())
-    : E.right('just some string');
+/**
+ * @returns The value, or `NotFoundError` if it is missing.
+ */
+export function safeGetValue(key: string): Result<NotFoundError, string> {
+  const value = storage.get(key);
+  return value === undefined ? err(new NotFoundError()) : ok(value);
 }
 
-function throwing(): string {
-  return pipe(nonThrowing(), E.match(
-    e => {
-      throw e;
-    },
-    result => result
-  ))
+/**
+ * Throwing version of `safeGetValue`.
+ * @throws {NotFoundError} The value is missing.
+ */
+export function getValue(key: string): string {
+  return unwrap(safeGetValue(key));
 }
 ```
 
 The second and final principle is **the simpler, the better**. We strive to write code that is as understandable and
 intuitive as possible. Please think twice before implementing a complex solution.
+
+## File Naming
+
+A file is named after what it exports, not counting types:
+
+- If it exports a single entity, the file is named exactly after it: `mockTelegramEnv.ts` exports `mockTelegramEnv`,
+  `NotFoundError.ts` exports `NotFoundError`. A `safeX`/`x` pair counts as a single entity `x`, and so
+  does a singleton `x` with its factory `createX`: `backButton.ts` exports `backButton` and `createBackButton`.
+- Otherwise, the file is named after what its exports have in common, in kebab-case: `launch-params.ts`
+  exports `retrieveLaunchParams` and `serializeLaunchParams`, `errors.ts` exports several error classes.
+
+Tests and type tests follow the name of the file they cover: `mockTelegramEnv.test.ts`, `types.test-d.ts`.
+Whenever possible, keep one test file per source file instead of testing several files in one.
+
+In directories holding many modules, like `components` and `functions` in `@tma.js/sdk`, each source file
+lives in its own folder named after it, together with its tests: `components/backButton/backButton.ts` and
+`components/backButton/backButton.test.ts`. Such folders have no `index.ts` files.
+
+## Object Keys Order
+
+Keys in object literals, interfaces and object types are sorted alphabetically. ESLint enforces it
+with [eslint-plugin-perfectionist](https://perfectionist.dev/), and `pnpm run packages:lint:fix`
+sorts them for you. Spread elements split an object into groups sorted separately, so keys are
+never moved across a spread.
+
+When the order matters, for example, it defines a serialized message or a query string, keep it and
+disable the rule on that line with a comment explaining why.
+
+## Valibot Schemas
+
+[Valibot](https://valibot.dev/) schema names start with a capital letter and end with `Schema`:
+`LaunchParamsSchema`, `ThemeParamsJsonSchema`.
 
 ## Trying Your Code
 

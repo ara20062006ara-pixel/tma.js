@@ -78,17 +78,17 @@ type and assign it to all 3 paths.
 ## Listening to Events
 
 Handling all possible environments for a developer's application can be challenging. To simplify
-this process, the community developed the [@telegram-apps/sdk](../packages/telegram-apps-sdk/2-x)
+this process, the community developed the [@tma.js/sdk](../packages/tma-js-sdk)
 package, which greatly eases integration.
 
 Here's how to use it:
 
 ```ts
-import { on } from '@telegram-apps/sdk';
+import { onEvent } from '@tma.js/sdk';
 
 // Start listening to "viewport_changed" event. Returned value
 // is a function, which removes this event listener.
-const removeListener = on('viewport_changed', payload => {
+const removeListener = onEvent('viewport_changed', payload => {
   console.log('Viewport changed:', payload);
 });
 
@@ -97,7 +97,7 @@ removeListener();
 ```
 
 You can learn more about calling methods in the
-package's [documentation](../packages/telegram-apps-bridge/events.md#listening-to-events).
+package's [documentation](../packages/tma-js-bridge/events.md#listening-to-events).
 
 ## Available Events
 
@@ -510,6 +510,22 @@ The QR scanner scanned some QR and extracted its content.
 ### `reload_iframe`
 
 Parent iframe requested current iframe reload.
+
+### `requested_chat_failed`
+
+Available since: **v9.6**
+
+Failed to share a chat requested via the `web_app_request_chat` method.
+
+| Field | Type     | Description     |
+|-------|----------|-----------------|
+| error | `string` | Occurred error. |
+
+### `requested_chat_sent`
+
+Available since: **v9.6**
+
+A chat requested via the `web_app_request_chat` method was shared.
 
 ### `safe_area_changed`
 
